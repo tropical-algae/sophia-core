@@ -8,11 +8,11 @@ from sophia.core.db.models import *
 
 local_engine = create_async_engine(
     url=settings.SQL_DATABASE_URI,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    pool_timeout=30,
-    pool_recycle=1800,
+    pool_pre_ping=settings.SQL_POOL_PRE_PING,
+    pool_size=settings.SQL_POOL_SIZE,
+    max_overflow=settings.SQL_MAX_OVERFLOW,
+    pool_timeout=settings.SQL_POOL_TIMEOUT,
+    pool_recycle=settings.SQL_POOL_RECYCLE,
     echo=settings.DEBUG,
 )
 LocalSession = async_sessionmaker(

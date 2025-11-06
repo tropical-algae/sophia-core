@@ -1,5 +1,4 @@
 from collections.abc import Generator
-from typing import Optional
 
 import pytest
 from fastapi.testclient import TestClient

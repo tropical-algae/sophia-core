@@ -1,6 +1,6 @@
 import secrets
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from sophia import __version__
 
@@ -19,6 +19,11 @@ class SysSetting(BaseSettings):
 class BasicSetting(BaseSettings):
     # database
     SQL_DATABASE_URI: str = ""
+    SQL_POOL_PRE_PING: bool = True
+    SQL_POOL_SIZE: int = 10
+    SQL_MAX_OVERFLOW: int = 20
+    SQL_POOL_TIMEOUT: int = 30
+    SQL_POOL_RECYCLE: int = 1800
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     ACCESS_TOKEN_SECRET_KEY: str = secrets.token_hex(32)
@@ -43,10 +48,11 @@ class ServiceSetting(BaseSettings):
 
 
 class Setting(SysSetting, BasicSetting, LogSetting, ServiceSetting):
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore",
+    )
 
 
 settings = Setting()
