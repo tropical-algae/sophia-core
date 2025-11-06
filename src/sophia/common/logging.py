@@ -1,119 +1,74 @@
-import logging
-import logging.config
-import os
-import time
+import sys
+from pathlib import Path
+from types import FrameType
+from typing import cast
 
-from uvicorn.config import LOGGING_CONFIG
+from loguru import logger
 
 from sophia.common.config import settings
-from sophia.common.util import generate_filepath
 
-FILE_HANDLER_NAME = "file"
-CONSOLE_HANDLER_NAME = "console"
-FORMAT = "[%(asctime)s.%(msecs)03d] %(filename)-27s -> line:%(lineno)-5d [%(levelname)s]:  %(message)s"
-LOG_COLOR_CONFIG = {
-    "DEBUG": "white",
-    "INFO": "green",
-    "WARNING": "yellow",
-    "ERROR": "red",
-    "CRITICAL": "bold_red",
-}
+ORIGIN_LOGGER_NAMES = ["uvicorn.asgi", "uvicorn.access", "uvicorn"]
+ORIGIN_LOGGER_NAMES += (
+    ["sqlalchemy.engine", "sqlalchemy.engine.Engine"] if settings.DEBUG else []
+)
 
 
-def set_handler_no_color(
-    config: dict, formatter_key: str, handlers_key: str, **kwargs
-) -> None:
-    config["formatters"].setdefault(formatter_key, {})
-    config["handlers"].setdefault(handlers_key, {})
+log_filepath = Path(settings.LOG_ROOT) / f"{settings.PROJECT_NAME}.log"
+log_filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    config["formatters"][formatter_key].update(
-        {
-            "format": FORMAT,
-            "datefmt": "%Y-%m-%d %H:%M:%S",
-        }
-    )
-    config["handlers"][handlers_key].update({"formatter": formatter_key, **kwargs})
+logger.remove()
+logger.add(
+    sys.stdout,
+    level=settings.LOG_LEVEL,
+    colorize=True,
+    format="<green>{time:YYYYMMDD HH:mm:ss}</green> | "
+    "{process.name} | "
+    "{thread.name} | "
+    "<cyan>{module}</cyan>.<cyan>{function}</cyan>"
+    ":<cyan>{line}</cyan> | "
+    "<level>{level}</level>: "
+    "<level>{message}</level>",
+)
 
-
-def set_handler_with_color(
-    config: dict, formatter_key: str, handlers_key: str, **kwargs
-) -> None:
-    set_handler_no_color(config, formatter_key, handlers_key, **kwargs)
-    config["formatters"][formatter_key].update(
-        {
-            "()": "colorlog.ColoredFormatter",
-            "format": f"%(log_color)s{FORMAT}",
-            "log_colors": LOG_COLOR_CONFIG,
-        }
-    )
-
-
-def get_uvicorn_logger_config() -> dict:
-    logging_config = LOGGING_CONFIG
-    set_handler_no_color(
-        config=logging_config, formatter_key="default", handlers_key="default"
-    )
-    set_handler_no_color(
-        config=logging_config, formatter_key="access", handlers_key="access"
+if settings.LOG_CONSOLE_OUTPUT:
+    logger.add(
+        log_filepath,
+        format="{time:YYYYMMDD HH:mm:ss} - "
+        "{process.name} | "
+        "{thread.name} | "
+        "{module}.{function}:{line} - {level} -{message}",
+        encoding=settings.LOG_FILE_ENCODING,
+        retention="12 week",
+        rotation="1 week",
+        compression="zip",
+        backtrace=True,
+        diagnose=True,
+        enqueue=True,
     )
 
-    return logging_config
 
+def intercept_std_logging():
+    import logging
 
-def get_system_logger_config(filename: str) -> dict:
-    handlers = (
-        [FILE_HANDLER_NAME, CONSOLE_HANDLER_NAME]
-        if settings.LOG_CONSOLE_OUTPUT
-        else [FILE_HANDLER_NAME]
-    )
-    logging_config = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {},
-        "handlers": {},
-        "loggers": {
-            settings.LOG_NAME: {
-                "handlers": handlers,
-                "level": "DEBUG",
-                "propagate": True,
-            },
-        },
-    }
-    # configure logger for file
-    set_handler_no_color(
-        config=logging_config,
-        formatter_key=FILE_HANDLER_NAME,
-        handlers_key=FILE_HANDLER_NAME,
-        **{
-            "class": "logging.FileHandler",
-            "level": settings.LOG_FILE_LEVEL,
-            "mode": "a",
-            "filename": filename,
-            "encoding": settings.LOG_FILE_ENCODING,
-        },
-    )
-    # configure logger for console
-    set_handler_with_color(
-        config=logging_config,
-        formatter_key=CONSOLE_HANDLER_NAME,
-        handlers_key=CONSOLE_HANDLER_NAME,
-        **{
-            "class": "logging.StreamHandler",
-            "level": settings.LOG_STREAM_LEVEL,
-        },
-    )
-    return logging_config
+    class InterceptHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover
+            try:
+                level = logger.level(record.levelname).name
+            except ValueError:
+                level = str(record.levelno)
+            frame, depth = logging.currentframe(), 2
+            while frame.f_code.co_filename == logging.__file__:
+                frame = cast(FrameType, frame.f_back)
+                depth += 1
 
+            logger.opt(depth=depth, exception=record.exc_info).log(
+                level,
+                record.getMessage(),
+            )
 
-def get_logger() -> logging.Logger:
-    filename = generate_filepath(
-        filename=f"{settings.PROJECT_NAME.replace(' ', '')}-{time.strftime('%Y-%m-%d', time.localtime())}.log",
-        filepath=os.path.join(os.getcwd(), settings.LOG_PATH),
-    )
-    logging_config = get_system_logger_config(filename=filename)
-    logging.config.dictConfig(logging_config)
-    logger = logging.getLogger(settings.LOG_NAME)
-    return logger
-
-
-logger = get_logger()
+    logging.basicConfig(handlers=[InterceptHandler()], level=settings.LOG_LEVEL)
+    logging.getLogger().handlers = [InterceptHandler()]
+    for logger_name in ORIGIN_LOGGER_NAMES:
+        logging_logger = logging.getLogger(logger_name)
+        logging_logger.handlers = [InterceptHandler()]
+        logging_logger.setLevel(settings.LOG_LEVEL)

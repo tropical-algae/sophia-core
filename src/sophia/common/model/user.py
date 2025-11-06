@@ -1,7 +1,6 @@
 import json
 from datetime import datetime, timezone
 from enum import StrEnum
-from typing import Union
 
 from pydantic import BaseModel, Field
 
@@ -22,12 +21,6 @@ class Token(BaseModel):
     timestamp: datetime
     scopes: list[str]
     status: int
-
-
-class TokenData(BaseModel):
-    id: str
-    username: Union[str, None] = None
-    scopes: list[str] = []
 
 
 class TokenPayload(BaseModel):

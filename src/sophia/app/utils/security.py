@@ -2,19 +2,18 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from jose import ExpiredSignatureError, exceptions, jwt
+from loguru import logger
 from passlib.hash import pbkdf2_sha256
 from pydantic import ValidationError
 
 from sophia.app.utils.constant import CONSTANT
 from sophia.common.config import settings
-from sophia.common.logging import logger
 from sophia.common.model.user import TokenPayload
 
 
 def get_access_token(
     data: TokenPayload, expires_delta: timedelta = timedelta(minutes=30)
 ) -> str:
-    # to_encode = data.copy()
     data.exp = datetime.now(timezone.utc) + expires_delta
     encoded_jwt = jwt.encode(
         data.to_dict(), settings.ACCESS_TOKEN_SECRET_KEY, algorithm="HS256"

@@ -8,12 +8,12 @@ from sophia import __version__
 class SysSetting(BaseSettings):
     # FastAPI
     VERSION: str = __version__
-    PROJECT_NAME: str = "Sophia"
+    PROJECT_NAME: str = "sophia"
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     WORKERS: int = 1
     API_PREFIX: str = "/api/v1"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
 
 class BasicSetting(BaseSettings):
@@ -26,10 +26,8 @@ class BasicSetting(BaseSettings):
 
 class LogSetting(BaseSettings):
     # logger
-    LOG_NAME: str = "log.test.record"
-    LOG_PATH: str = "./log"
-    LOG_FILE_LEVEL: str = "INFO"
-    LOG_STREAM_LEVEL: str = "DEBUG"
+    LOG_ROOT: str = "./log"
+    LOG_LEVEL: str = "INFO"
     LOG_FILE_ENCODING: str = "utf-8"
     LOG_CONSOLE_OUTPUT: bool = True
 

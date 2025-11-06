@@ -1,5 +1,4 @@
 import json
-import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any
@@ -8,6 +7,7 @@ import pytz
 from fastapi import FastAPI
 from fastapi.concurrency import iterate_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -43,7 +43,7 @@ def resp_error(response_body: dict) -> Response:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI, logger: logging.Logger):
+async def lifespan(app: FastAPI):
     logger.info("Starting service...")
     _ = app
 
