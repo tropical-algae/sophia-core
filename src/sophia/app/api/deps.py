@@ -1,9 +1,9 @@
-from collections.abc import Generator
+from collections.abc import AsyncGenerator
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from loguru import logger
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from sophia.app.utils.constant import CONSTANT
 from sophia.app.utils.security import verift_access_token
@@ -24,26 +24,26 @@ reusable_oauth2 = OAuth2PasswordBearer(
 )
 
 
-def get_db() -> Generator:
+async def get_db() -> AsyncGenerator:
     db = None
     try:
         db = LocalSession()
         yield db
     finally:
         if db:
-            db.close()
+            await db.close()
 
 
 async def get_current_user(
     security_scopes: SecurityScopes,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     token: str = Depends(reusable_oauth2),
 ) -> User:
     headers = {"WWW-Authenticate": "Bearer"}
     if security_scopes.scopes:
         headers = {"WWW-Authenticate": f'Bearer scope="{security_scopes.scope_str}"'}
     payload = verift_access_token(token=token, headers=headers)
-    user = select_user_by_full_name(db, full_name=payload.username)
+    user = await select_user_by_full_name(db, full_name=payload.username)
     if user is None:
         raise HTTPException(headers=headers, **CONSTANT.RESP_USER_NOT_EXISTS)
     # Check whether the permission of the current user is in the allowed permission list

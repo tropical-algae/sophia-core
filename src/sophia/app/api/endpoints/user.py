@@ -5,7 +5,7 @@ from typing import Any
 import pytz
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlmodel import Session
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from sophia.app.api.deps import get_current_user, get_db
 from sophia.app.utils import security
@@ -21,12 +21,12 @@ router = APIRouter()
 
 @router.post("/access-token", response_model=Token)
 async def login_access_token(
-    db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
+    db: AsyncSession = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
-    user = select_user_by_full_name(db, full_name=form_data.username)
+    user = await select_user_by_full_name(db, full_name=form_data.username)
     if not user:
         raise HTTPException(**CONSTANT.RESP_USER_NOT_EXISTS)
 
@@ -65,19 +65,22 @@ async def token_test(current_user: User = Depends(get_current_user)) -> Any:
 @router.post("/register", response_model=User)
 async def user_register(
     user: UserBasicInfo,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> Any:
     """
     Register new user (This interface has not undergone login verification)
     """
-    if select_user_by_full_name(db, full_name=user.full_name):
+    existed_user = await select_user_by_full_name(db, full_name=user.full_name)
+    if existed_user is not None:
         raise HTTPException(**CONSTANT.RESP_USER_EXISTS)
 
-    if select_user_by_email(db, email=user.email):
+    existed_user = await select_user_by_email(db, email=user.email)
+    if existed_user is not None:
         raise HTTPException(**CONSTANT.RESP_USER_EMAIL_EXISTS)
+
     try:
         new_user = user.build_user()
-        new_user = create_user(db=db, user=new_user)
+        new_user = await create_user(db=db, user=new_user)
         del new_user.password
         return new_user
     except Exception as err:

@@ -15,6 +15,7 @@ from starlette.responses import JSONResponse, Response
 
 from sophia.app.utils.constant import CONSTANT
 from sophia.common.config import settings
+from sophia.core.db.session import init_db_models
 
 origins = ["*"]
 
@@ -46,6 +47,7 @@ def resp_error(response_body: dict) -> Response:
 async def lifespan(app: FastAPI):
     logger.info("Starting service...")
     _ = app
+    await init_db_models()
 
     yield
     logger.info("Shut down and clear cache...")
