@@ -98,3 +98,4 @@ target/
 .venv/
 cache/
 cov.xml
+config.yaml

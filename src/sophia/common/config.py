@@ -1,8 +1,16 @@
 import secrets
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+    YamlConfigSettingsSource,
+)
 
 from sophia import __version__
+
+CONFIG_FILE = "config.yaml"
+ENV_FILE = ".env"
 
 
 class SysSetting(BaseSettings):
@@ -10,8 +18,8 @@ class SysSetting(BaseSettings):
     VERSION: str = __version__
     PROJECT_NAME: str = "sophia"
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    WORKERS: int = 1
+    PORT: int = 7707
+    WORKERS: int = 2
     API_PREFIX: str = "/api/v1"
     DEBUG: bool = False
 
@@ -44,15 +52,32 @@ class ServiceSetting(BaseSettings):
     GPT_API_KEY: str = ""
     GPT_DEFAULT_MODEL: str = "gpt-3.5-turbo-ca"
     GPT_TEMPERATURE: float = 0.8
-    GPT_RESPONSE_FORMAT: dict = {"type": "json_object"}
+
+    AGENT_MEMORY_SQL_TABLE: str = "agent_memory"
+    AGENT_SYS_PROMPT_SUFFIX: str = ""
 
 
 class Setting(SysSetting, BasicSetting, LogSetting, ServiceSetting):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=ENV_FILE,
         case_sensitive=True,
         extra="ignore",
     )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        _ = init_settings
+        yaml_settings = YamlConfigSettingsSource(
+            settings_cls=settings_cls, yaml_file=CONFIG_FILE, yaml_file_encoding="utf-8"
+        )
+        return yaml_settings, env_settings, dotenv_settings, file_secret_settings
 
 
 settings = Setting()

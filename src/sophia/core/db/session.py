@@ -1,9 +1,9 @@
-from loguru import logger
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from sophia.common.config import settings
+from sophia.common.logging import logger
 from sophia.core.db.models import *
 
 local_engine = create_async_engine(

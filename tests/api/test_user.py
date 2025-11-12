@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from sophia.common.config import settings
-from sophia.common.model.base import SystemStatusType
+from sophia.core.model.base import SystemStatusType
 from tests.conftest import DataStore
 
 TEMP_USER: dict = {

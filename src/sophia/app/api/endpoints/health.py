@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Security
 
 from sophia.common.config import settings
-from sophia.common.model.base import SystemStatus, SystemStatusType
+from sophia.core.model.base import SystemStatus, SystemStatusType
 
 router = APIRouter()
 

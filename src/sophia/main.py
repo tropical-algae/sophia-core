@@ -25,7 +25,7 @@ def run() -> None:
         port=settings.PORT,
         workers=settings.WORKERS,
         access_log=True,
-        reload=True,
+        # reload=True,
     )
     server = uvicorn.Server(config)
     intercept_std_logging()

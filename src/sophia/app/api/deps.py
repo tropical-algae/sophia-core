@@ -2,16 +2,16 @@ from collections.abc import AsyncGenerator
 
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from loguru import logger
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from sophia.app.utils.constant import CONSTANT
 from sophia.app.utils.security import verift_access_token
 from sophia.common.config import settings
-from sophia.common.model.user import UserPermType
+from sophia.common.logging import logger
 from sophia.core.db.crud import select_user_by_full_name
 from sophia.core.db.models import User
 from sophia.core.db.session import LocalSession
+from sophia.core.model.user import UserPermType
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_PREFIX}/user/access-token",

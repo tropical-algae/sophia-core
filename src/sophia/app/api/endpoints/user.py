@@ -11,10 +11,10 @@ from sophia.app.api.deps import get_current_user, get_db
 from sophia.app.utils import security
 from sophia.app.utils.constant import CONSTANT
 from sophia.common.config import settings
-from sophia.common.model.user import Token, TokenPayload, UserBasicInfo
 from sophia.core.db.crud import create_user, select_user_by_full_name, verify_password
 from sophia.core.db.crud.crud_user import select_user_by_email
 from sophia.core.db.models import User
+from sophia.core.model.user import Token, TokenPayload, UserBasicInfo
 
 router = APIRouter()
 

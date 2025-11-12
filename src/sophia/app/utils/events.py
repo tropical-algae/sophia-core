@@ -7,7 +7,6 @@ import pytz
 from fastapi import FastAPI
 from fastapi.concurrency import iterate_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
-from loguru import logger
 from starlette import status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -15,6 +14,7 @@ from starlette.responses import JSONResponse, Response
 
 from sophia.app.utils.constant import CONSTANT
 from sophia.common.config import settings
+from sophia.common.logging import logger
 from sophia.core.db.session import init_db_models
 
 origins = ["*"]
@@ -59,7 +59,8 @@ def add_middleware(app: FastAPI):
         # return directly if not an api endpoint
         is_not_api: bool = not request.url.path.startswith(settings.API_PREFIX)
         is_access: bool = request.url.path.endswith("access-token")
-        if is_access or is_not_api:
+        is_stream: bool = request.url.path.endswith("stream")
+        if is_access or is_not_api or is_stream:
             return response
 
         # return exception

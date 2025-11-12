@@ -2,13 +2,13 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from jose import ExpiredSignatureError, exceptions, jwt
-from loguru import logger
 from passlib.hash import pbkdf2_sha256
 from pydantic import ValidationError
 
 from sophia.app.utils.constant import CONSTANT
 from sophia.common.config import settings
-from sophia.common.model.user import TokenPayload
+from sophia.common.logging import logger
+from sophia.core.model.user import TokenPayload
 
 
 def get_access_token(
