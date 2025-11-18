@@ -1,15 +1,15 @@
 import uuid
 
 from llama_index.core.agent.workflow import AgentOutput, AgentStream
-from llama_index.core.llms import CompletionResponse
+from llama_index.core.llms import ChatMessage, CompletionResponse
 from pydantic import BaseModel
 
 from sophia.common.logging import logger
 from sophia.core.agent.base import ToolBase
+from sophia.core.db.models import UserAccount
 
 
 class AgentRequest(BaseModel):
-    session_id: str
     message: str
 
 
@@ -65,3 +65,14 @@ class AgentResponseStream(BaseModel):
             delta=output.delta,
             response=output.response,
         )
+
+
+class MemoryResponse(BaseModel):
+    session_id: str
+    messages: list[ChatMessage]
+
+
+class ChatSessionRequest(BaseModel):
+    session_id: str
+    user: UserAccount
+    is_new_session: bool

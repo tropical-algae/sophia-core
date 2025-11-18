@@ -3,13 +3,14 @@ from fastapi.testclient import TestClient
 
 from sophia.common.config import settings
 from sophia.core.model.base import SystemStatusType
+from sophia.core.model.user import ScopeType
 from tests.conftest import DataStore
 
 TEMP_USER: dict = {
     "full_name": "user",
     "password": "123456",
     "email": "user@test.com",
-    "scopes": ["USER"],
+    "scopes": [ScopeType.ADMIN.value, ScopeType.USER.value],
 }
 
 

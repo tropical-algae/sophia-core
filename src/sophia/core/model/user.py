@@ -4,10 +4,11 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from sophia.core.db.models import User
+from sophia.common.util import generate_random_token
+from sophia.core.db.models import UserAccount
 
 
-class UserPermType(StrEnum):
+class ScopeType(StrEnum):
     ADMIN = "ADMIN"
     USER = "USER"
     GUEST = "GUEST"
@@ -26,12 +27,12 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     userid: str
     username: str
-    scopes: list[UserPermType]
+    scopes: list[ScopeType]
     exp: datetime = datetime.now(timezone.utc)
 
     def to_dict(self) -> dict:
         data = self.model_dump()
-        scopes: list[UserPermType] = data.get("scopes", [])
+        scopes: list[ScopeType] = data.get("scopes", [])
         data["scopes"] = [s.value for s in scopes]
         return data
 
@@ -44,12 +45,13 @@ class UserBasicInfo(BaseModel):
     full_name: str = Field(description="User name")
     password: str = Field(description="User password")
     email: str = Field(default="admin@test.com", description="The email of user")
-    scopes: list[UserPermType] = Field(
+    scopes: list[ScopeType] = Field(
         default_factory=list, description="The scope for user, include ADMIN, USER, GUEST"
     )
 
-    def build_user(self) -> User:
-        return User(
+    def build_user(self) -> UserAccount:
+        return UserAccount(
+            id=generate_random_token(prefix="USR", length=16),
             full_name=self.full_name,
             password=self.password,
             email=self.email,

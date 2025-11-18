@@ -3,18 +3,18 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import pytz
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.security import OAuth2PasswordRequestForm, SecurityScopes
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from sophia.app.api.deps import get_current_user, get_db
 from sophia.app.utils import security
 from sophia.app.utils.constant import CONSTANT
 from sophia.common.config import settings
-from sophia.core.db.crud import create_user, select_user_by_full_name, verify_password
+from sophia.core.db.crud import insert_user, select_user_by_full_name, verify_password
 from sophia.core.db.crud.crud_user import select_user_by_email
-from sophia.core.db.models import User
-from sophia.core.model.user import Token, TokenPayload, UserBasicInfo
+from sophia.core.db.models import UserAccount
+from sophia.core.model.user import ScopeType, Token, TokenPayload, UserBasicInfo
 
 router = APIRouter()
 
@@ -29,9 +29,6 @@ async def login_access_token(
     user = await select_user_by_full_name(db, full_name=form_data.username)
     if not user:
         raise HTTPException(**CONSTANT.RESP_USER_NOT_EXISTS)
-
-    if not user.is_active:
-        raise HTTPException(**CONSTANT.RESP_USER_NOT_ACTIVE)
 
     if not verify_password(form_data.password, str(user.password)):
         raise HTTPException(**CONSTANT.RESP_USER_INCORRECT_PASSWD)
@@ -53,8 +50,10 @@ async def login_access_token(
     )
 
 
-@router.post("/test-token", response_model=User)
-async def token_test(current_user: User = Depends(get_current_user)) -> Any:
+@router.post("/test-token", response_model=UserAccount)
+async def token_test(
+    current_user: UserAccount = Security(get_current_user, scopes=[ScopeType.ADMIN]),
+) -> Any:
     """
     Test access token
     """
@@ -62,7 +61,7 @@ async def token_test(current_user: User = Depends(get_current_user)) -> Any:
     return current_user
 
 
-@router.post("/register", response_model=User)
+@router.post("/register", response_model=UserAccount)
 async def user_register(
     user: UserBasicInfo,
     db: AsyncSession = Depends(get_db),
@@ -80,7 +79,7 @@ async def user_register(
 
     try:
         new_user = user.build_user()
-        new_user = await create_user(db=db, user=new_user)
+        new_user = await insert_user(db=db, user=new_user)
         del new_user.password
         return new_user
     except Exception as err:

@@ -18,7 +18,7 @@ from llama_index.core.memory import (
     StaticMemoryBlock,
     VectorMemoryBlock,
 )
-from llama_index.core.workflow import Context
+from llama_index.core.workflow import Context, WorkflowRuntimeError
 from llama_index.llms.openai import OpenAI
 
 import sophia.core.agent.tools as agent_tools
@@ -74,21 +74,23 @@ class SophiaAgent(AgentBase):
             llm=self.client,
         )
 
-    def _get_memory(self, session_id: str) -> Memory:
-        return self.memories.setdefault(
-            session_id,
-            Memory.from_defaults(
-                session_id=session_id,
-                async_database_uri=settings.SQL_DATABASE_URI,
-                table_name=settings.AGENT_MEMORY_SQL_TABLE,
-                async_engine=local_engine,
-                token_limit=1200,
-                chat_history_token_ratio=0.7,
-                token_flush_size=800,
-                memory_blocks=self.blocks,
-                insert_method=InsertMethod.USER,
-            ),
-        )
+    def get_memory(self, session_id: str, default_create: bool = True) -> Memory | None:
+        if default_create:
+            return self.memories.setdefault(
+                session_id,
+                Memory.from_defaults(
+                    session_id=session_id,
+                    async_database_uri=settings.SQL_DATABASE_URI,
+                    table_name=settings.AGENT_MEMORY_SQL_TABLE,
+                    async_engine=local_engine,
+                    token_limit=1200,
+                    chat_history_token_ratio=0.7,
+                    token_flush_size=800,
+                    memory_blocks=self.blocks,
+                    insert_method=InsertMethod.USER,
+                ),
+            )
+        return self.memories.get(session_id)
 
     def _get_context(self, session_id: str) -> Context:
         return self.context.setdefault(session_id, Context(self.agent))
@@ -115,7 +117,9 @@ class SophiaAgent(AgentBase):
         self, session_id: str, message: str, use_agent: bool = True, **kwargs
     ) -> AgentResponse | None:
         result: AgentResponse | None = None
-        memory = self._get_memory(session_id)
+        memory: Memory | None = self.get_memory(session_id)
+        if memory is None:
+            return None
 
         if use_agent:
             ctx = self._get_context(session_id)
@@ -137,13 +141,22 @@ class SophiaAgent(AgentBase):
         self, session_id: str, message: str, use_agent: bool = True, **kwargs
     ) -> AsyncIterator[AgentResponseStream]:
         _ = use_agent
-        memory = self._get_memory(session_id)
+        memory = self.get_memory(session_id)
+        if memory is None:
+            return
         # ctx = self._get_context(session_id)
-
-        handler = self.agent.run(user_msg=message, memory=memory, **kwargs)
-        async for event in handler.stream_events():
-            if isinstance(event, AgentStream):
-                yield AgentResponseStream.from_llm(session_id=session_id, output=event)
+        steps = 0
+        try:
+            handler = self.agent.run(user_msg=message, memory=memory, **kwargs)
+            async for event in handler.stream_events():
+                if isinstance(event, AgentStream):
+                    steps += 1
+                    yield AgentResponseStream.from_llm(
+                        session_id=session_id, output=event
+                    )
+        finally:
+            if steps == 0:
+                raise RuntimeError("Agent failed to perform streaming inference.")
 
 
 agent = SophiaAgent(

@@ -7,6 +7,10 @@ from llama_index.core.tools import FunctionTool
 
 class AgentBase(ABC):
     @abstractmethod
+    def get_memory(self, session_id: str, default_create: bool = True) -> Any:
+        raise NotImplementedError
+
+    @abstractmethod
     async def run(
         self,
         session_id: str,

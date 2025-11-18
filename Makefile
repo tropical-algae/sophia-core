@@ -46,8 +46,8 @@ clean:
 	rm -rf .cache;
 
 update-db:
-	sqlacodegen --generator sqlmodels \
+	sqlacodegen $(subst +aiosqlite,,$(SQL_DATABASE_URI)) --generator sqlmodels \
     --tables \
-        user \
+		user,chat_session,chat_memory \
     --outfile ./src/sophia/core/db/models.py \
-    ${SQL_DATABASE_URI}
+    

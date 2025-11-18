@@ -53,7 +53,7 @@ class ServiceSetting(BaseSettings):
     GPT_DEFAULT_MODEL: str = "gpt-3.5-turbo-ca"
     GPT_TEMPERATURE: float = 0.8
 
-    AGENT_MEMORY_SQL_TABLE: str = "agent_memory"
+    AGENT_MEMORY_SQL_TABLE: str = "chat_memory"
     AGENT_SYS_PROMPT_SUFFIX: str = ""
 
 

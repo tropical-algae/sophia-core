@@ -35,10 +35,6 @@ class Constant(BaseSettings):
         "status_code": status.HTTP_403_FORBIDDEN,
         "detail": "当前用户权限不足",
     }
-    RESP_USER_NOT_ACTIVE: dict = {
-        "status_code": status.HTTP_403_FORBIDDEN,
-        "detail": "当前账户已暂停使用",
-    }
     RESP_USER_INCORRECT_PASSWD: dict = {
         "status_code": status.HTTP_401_UNAUTHORIZED,
         "detail": "用户名或密码错误",
@@ -54,6 +50,15 @@ class Constant(BaseSettings):
     RESP_USER_NOT_EXISTS: dict = {
         "status_code": status.HTTP_401_UNAUTHORIZED,
         "detail": "用户不存在",
+    }
+
+    RESP_USER_SESSION_NOT_EXISTS: dict = {
+        "status_code": status.HTTP_404_NOT_FOUND,
+        "detail": "会话记录不存在",
+    }
+    RESP_USER_SESSION_NULL: dict = {
+        "status_code": status.HTTP_404_NOT_FOUND,
+        "detail": "请求发送了一个空会话",
     }
 
 

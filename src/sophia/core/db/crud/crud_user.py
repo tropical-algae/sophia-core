@@ -4,33 +4,38 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from sophia.app.utils.security import get_password_hash, verify_password
-from sophia.core.db.models import User
+from sophia.core.db.models import UserAccount
 
 
-async def select_all_user(db: AsyncSession) -> list[User]:
-    users = await db.exec(select(User))
+async def select_all_user(db: AsyncSession) -> list[UserAccount]:
+    users = await db.exec(select(UserAccount))
     return list(users.all())
 
 
 async def select_user_by_full_name(
     db: AsyncSession, full_name: str | None
-) -> User | None:
+) -> UserAccount | None:
     if full_name:
-        user_result = await db.exec(select(User).where(User.full_name == full_name))
+        user_result = await db.exec(
+            select(UserAccount).where(
+                UserAccount.full_name == full_name, UserAccount.is_active
+            )
+        )
         return user_result.first()
     return None
 
 
-async def select_user_by_email(db: AsyncSession, email: str | None) -> User | None:
+async def select_user_by_email(db: AsyncSession, email: str | None) -> UserAccount | None:
     if email:
-        user_result = await db.exec(select(User).where(User.email == email))
+        user_result = await db.exec(
+            select(UserAccount).where(UserAccount.email == email, UserAccount.is_active)
+        )
         return user_result.first()
     return None
 
 
-async def create_user(db: AsyncSession, user: User):
+async def insert_user(db: AsyncSession, user: UserAccount):
     user.password = get_password_hash(user.password)
-    user.id = user.id or uuid.uuid4().hex
 
     db.add(user)
     await db.commit()
