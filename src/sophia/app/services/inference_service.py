@@ -4,23 +4,24 @@ from collections.abc import AsyncIterator
 from llama_index.core.memory import Memory
 
 from sophia.common.util import async_db_wrapper
-from sophia.core.agent.agent import sophia_agent
+from sophia.core.agent.agent import SophiaAgent
+from sophia.core.agent.factory import agent_factory
 from sophia.core.agent.memory import sophia_memory
 from sophia.core.db.crud.session_crud import delete_session
 from sophia.core.model.message import ChatSessionRequest
 
 
 async def agent_stream_response(
-    chat_session: ChatSessionRequest, message: str
+    chat_session: ChatSessionRequest, model: str, message: str
 ) -> AsyncIterator[bytes]:
     try:
-        memory: Memory | None = sophia_memory.get_memory(
+        memory: Memory = sophia_memory.get_memory(
             user_id=chat_session.user.id,
             session_id=chat_session.session_id,
         )
-        if memory is None:
-            return
-        async for resp in sophia_agent.run_stream(message=message, memory=memory):
+        agent: SophiaAgent = agent_factory.get_agent(agent=SophiaAgent, model=model)
+
+        async for resp in agent.run_stream(message=message, memory=memory):
             yield (
                 json.dumps(resp.model_dump(), ensure_ascii=False).encode("utf-8") + b"\n"
             )

@@ -1,5 +1,4 @@
 import inspect
-import uuid
 from collections.abc import AsyncIterator
 from typing import cast
 
@@ -9,15 +8,7 @@ from llama_index.core.agent.workflow import (
     FunctionAgent,
     ReActAgent,
 )
-from llama_index.core.llms import CompletionResponse
-from llama_index.core.memory import (
-    BaseMemoryBlock,
-    FactExtractionMemoryBlock,
-    InsertMethod,
-    Memory,
-    StaticMemoryBlock,
-    VectorMemoryBlock,
-)
+from llama_index.core.memory import Memory
 from llama_index.core.workflow import Context
 from llama_index.llms.openai import OpenAI
 
@@ -27,7 +18,6 @@ from sophia.common.decorator import exception_handling
 from sophia.common.logging import logger
 from sophia.common.util import import_all_modules_from_package
 from sophia.core.agent.base import AgentBase, ToolBase
-from sophia.core.db.session import local_engine
 from sophia.core.model.message import AgentResponse, AgentResponseStream
 
 
@@ -50,19 +40,6 @@ class SophiaAgent(AgentBase):
             timeout=timeout,
             **kwargs,
         )
-        self.blocks: list[BaseMemoryBlock] = [
-            StaticMemoryBlock(
-                name="profile",
-                static_content="User prefers concise, Chinese responses.",
-                priority=0,
-            ),
-            FactExtractionMemoryBlock(
-                name="extracted facts",
-                llm=self.client,
-                max_facts=200,
-                priority=1,
-            ),
-        ]
         self.tools: dict[str, type[ToolBase]] = {}
         self.context: dict[str, Context] = {}
         # register tools
@@ -132,11 +109,3 @@ class SophiaAgent(AgentBase):
         finally:
             if steps == 0:
                 raise RuntimeError("Agent failed to perform streaming inference.")
-
-
-sophia_agent = SophiaAgent(
-    api_key=settings.GPT_API_KEY,
-    api_base=settings.GPT_BASE_URL,
-    default_model=settings.GPT_DEFAULT_MODEL,
-    system_prompt=settings.AGENT_SYS_PROMPT_SUFFIX,
-)

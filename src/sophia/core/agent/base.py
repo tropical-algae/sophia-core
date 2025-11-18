@@ -7,6 +7,20 @@ from llama_index.core.tools import FunctionTool
 
 
 class AgentBase(ABC):
+    def __init__(
+        self,
+        api_key: str,
+        api_base: str,
+        default_model: str,
+        system_prompt: str,
+    ):
+        self.api_key = api_key
+        self.api_base = api_base
+        self.default_model = default_model
+        self.system_prompt = system_prompt
+
+        super().__init__()
+
     @abstractmethod
     async def run(
         self,

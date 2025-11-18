@@ -2,14 +2,16 @@ import uuid
 
 from llama_index.core.agent.workflow import AgentOutput, AgentStream
 from llama_index.core.llms import ChatMessage, CompletionResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from sophia.common.config import settings
 from sophia.common.logging import logger
 from sophia.core.agent.base import ToolBase
 from sophia.core.db.models import UserAccount
 
 
 class AgentRequest(BaseModel):
+    model: str = Field(default=settings.GPT_DEFAULT_MODEL)
     message: str
 
 

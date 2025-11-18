@@ -50,11 +50,12 @@ class ServiceSetting(BaseSettings):
     GPT_PROMPT_FILEPATH: str = ""
     GPT_BASE_URL: str = ""
     GPT_API_KEY: str = ""
-    GPT_DEFAULT_MODEL: str = "gpt-3.5-turbo-ca"
+    GPT_DEFAULT_MODEL: str = "gpt-5-nano"
     GPT_TEMPERATURE: float = 0.8
 
     AGENT_MEMORY_SQL_TABLE: str = "chat_memory"
     AGENT_SYS_PROMPT_SUFFIX: str = ""
+    AGENT_OPTIONAL_MODELS: list[str] = ["gpt-5-nano"]
 
 
 class Setting(SysSetting, BasicSetting, LogSetting, ServiceSetting):

@@ -17,15 +17,22 @@ async def insert_session(db: AsyncSession, session_id: str, user_id: str) -> Cha
     return chat_session
 
 
+async def select_all_session_by_user(db: AsyncSession, user_id: str) -> list[ChatSession]:
+    result = await db.exec(
+        select(ChatSession).where(ChatSession.user_id == user_id, ChatSession.is_active)
+    )
+    return list(result.all())
+
+
 async def select_session_by_id_and_user(
     db: AsyncSession, id: str, user_id: str
 ) -> ChatSession | None:
-    user_result = await db.exec(
+    result = await db.exec(
         select(ChatSession).where(
             ChatSession.id == id, ChatSession.user_id == user_id, ChatSession.is_active
         )
     )
-    return user_result.first()
+    return result.first()
 
 
 async def delete_session(db: AsyncSession, session_id: str) -> ChatSession | None:

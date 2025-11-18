@@ -3,17 +3,17 @@ from pydantic_settings import BaseSettings
 
 
 class Constant(BaseSettings):
+    # 权限
+    ROLE_ADMIN_DESCRIPTION: str = "系统管理员，管理所有数据"
+    ROLE_USER_DESCRIPTION: str = "系统用户，查看自己用户数据"
+    ROLE_GUEST_DESCRIPTION: str = "访客，查看公开数据"
+
     # 返回值
     RESP_SUCCESS: dict = {"status": status.HTTP_200_OK, "message": "success"}
     RESP_SERVER_ERROR: dict = {
         "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
         "detail": "服务器错误",
     }
-    # 权限
-    ROLE_ADMIN_DESCRIPTION: str = "系统管理员，管理所有数据"
-    ROLE_USER_DESCRIPTION: str = "系统用户，查看自己用户数据"
-    ROLE_GUEST_DESCRIPTION: str = "访客，查看公开数据"
-    # 用户
     RESP_TOKEN_NOT_MATCH: dict = {
         "status_code": status.HTTP_401_UNAUTHORIZED,
         "detail": "Access Token校验失败",
@@ -59,6 +59,10 @@ class Constant(BaseSettings):
     RESP_USER_SESSION_NULL: dict = {
         "status_code": status.HTTP_404_NOT_FOUND,
         "detail": "请求发送了一个空会话",
+    }
+    RESP_INVALID_MODEL: dict = {
+        "status_code": status.HTTP_404_NOT_FOUND,
+        "detail": "无效的模型",
     }
 
 
