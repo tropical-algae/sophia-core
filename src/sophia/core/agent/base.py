@@ -2,19 +2,16 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from typing import Any
 
+from llama_index.core.memory import Memory
 from llama_index.core.tools import FunctionTool
 
 
 class AgentBase(ABC):
     @abstractmethod
-    def get_memory(self, session_id: str, default_create: bool = True) -> Any:
-        raise NotImplementedError
-
-    @abstractmethod
     async def run(
         self,
-        session_id: str,
         message: str,
+        memory: Memory,
         use_agent: bool = True,
         **kwargs,  # type: ignore
     ) -> Any:
@@ -23,8 +20,8 @@ class AgentBase(ABC):
     @abstractmethod
     def run_stream(
         self,
-        session_id: str,
         message: str,
+        memory: Memory,
         use_agent: bool = True,
         **kwargs,  # type: ignore
     ) -> AsyncIterator[Any]:
