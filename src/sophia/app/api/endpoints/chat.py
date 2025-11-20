@@ -22,8 +22,4 @@ async def agent_chat_stream(
         get_session_id(scopes=[ScopeType.ADMIN, ScopeType.USER], auto_create_session=True)
     ),
 ):
-    return StreamingResponse(
-        agent_stream_response(
-            chat_session=chat_session, model=data.model, message=data.message
-        )
-    )
+    return StreamingResponse(agent_stream_response(chat_session=chat_session, query=data))

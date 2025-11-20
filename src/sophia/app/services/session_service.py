@@ -2,7 +2,7 @@ from llama_index.core.memory import Memory
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from sophia.common.util import generate_random_token
-from sophia.core.agent.memory import sophia_memory
+from sophia.core.agent.store import sophia_store
 from sophia.core.db.crud.session_crud import insert_session, select_all_session_by_user
 from sophia.core.db.models import UserAccount
 from sophia.core.model.message import MemoryResponse
@@ -22,7 +22,7 @@ async def collect_sessions(db: AsyncSession, user_id: str) -> list[str]:
 
 
 async def collect_session_memory(user_id: str, session_id: str) -> MemoryResponse:
-    memory: Memory = sophia_memory.get_memory(
+    memory: Memory = sophia_store.get_memory(
         user_id=user_id,
         session_id=session_id,
     )

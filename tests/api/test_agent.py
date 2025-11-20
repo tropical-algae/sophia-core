@@ -10,7 +10,7 @@ FAKE_SESION_ID: str = "FAKEID"
 
 
 @pytest.mark.run(order=5)
-def test_model_check_api(client: TestClient, data_store: DataStore):
+def test_session_check_api(client: TestClient, data_store: DataStore):
     header = {"Authorization": f"Bearer {data_store.admin_token_data}"}
     url = f"{settings.API_PREFIX}/session/list"
     response = client.get(url=url, headers=header)
@@ -18,8 +18,15 @@ def test_model_check_api(client: TestClient, data_store: DataStore):
 
 
 @pytest.mark.run(order=6)
-def test_session_check_api(client: TestClient):
+def test_model_check_api(client: TestClient):
     url = f"{settings.API_PREFIX}/chat/models"
+    response = client.get(url=url)
+    assert response.status_code == 200
+
+
+@pytest.mark.run(order=6)
+def test_tool_check_api(client: TestClient):
+    url = f"{settings.API_PREFIX}/tool/list"
     response = client.get(url=url)
     assert response.status_code == 200
 

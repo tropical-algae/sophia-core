@@ -6,6 +6,7 @@ from sophia.core.agent.base import ToolBase
 
 class LocaltimeTool(ToolBase):
     __tool_name__ = "check_time"
+    __tool_display_name__ = "Local Time"
     __tool_description__ = "获取当前时间"
     __activate__ = True
 

@@ -11,8 +11,9 @@ from sophia.core.db.models import UserAccount
 
 
 class AgentRequest(BaseModel):
-    model: str = Field(default=settings.GPT_DEFAULT_MODEL)
     message: str
+    model: str = Field(default=settings.GPT_DEFAULT_MODEL)
+    blocked_tools: list[str] = Field(default_factory=list)
 
 
 class AgentResponse(BaseModel):
