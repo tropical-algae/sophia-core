@@ -19,7 +19,7 @@ def test_session_check_api(client: TestClient, data_store: DataStore):
 
 @pytest.mark.run(order=6)
 def test_model_check_api(client: TestClient):
-    url = f"{settings.API_PREFIX}/chat/models"
+    url = f"{settings.API_PREFIX}/model/list"
     response = client.get(url=url)
     assert response.status_code == 200
 

@@ -10,12 +10,12 @@ from sophia.core.model.user import ScopeType
 router = APIRouter()
 
 
-@router.get("/models")
+@router.get("/list")
 async def get_agent_models() -> list[str]:
     return settings.AGENT_OPTIONAL_MODELS
 
 
-@router.post("/agent/stream")
+@router.post("/chat/stream")
 async def agent_chat_stream(
     chat_request: ChatCompleteRequest = Depends(
         get_agent_query(scopes=[ScopeType.ADMIN, ScopeType.USER])
