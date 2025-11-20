@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator, Awaitable, Callable
 
-from fastapi import Depends, Header, HTTPException, Security
+from fastapi import Body, Depends, Header, HTTPException, Security
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -13,11 +13,15 @@ from sophia.core.db.crud import select_user_by_full_name
 from sophia.core.db.crud.session_crud import select_session_by_id_and_user
 from sophia.core.db.models import UserAccount
 from sophia.core.db.session import LocalSession
-from sophia.core.model.message import ChatSessionRequest
+from sophia.core.model.message import (
+    ChatCompleteRequest,
+    ChatRequest,
+    ChatSessionCompleteRequest,
+    ChatSessionRequest,
+)
 from sophia.core.model.user import ScopeType
 
 AUTHENTICATE_HEADER = "WWW-Authenticate"
-SESSION_HEADER = "X-Session-Id"
 
 
 reusable_oauth2 = OAuth2PasswordBearer(
@@ -41,6 +45,33 @@ async def get_db() -> AsyncGenerator:
             await db.close()
 
 
+async def verity_session_id(
+    db: AsyncSession,
+    user: UserAccount,
+    session_id: str | None = None,
+    auto_create_session: bool = True,
+) -> ChatSessionCompleteRequest:
+    if not session_id:
+        if not auto_create_session:
+            raise HTTPException(**CONSTANT.RESP_USER_SESSION_NULL)
+        session_id = await create_session(db=db, user=user)
+        return ChatSessionCompleteRequest(
+            user=user,
+            session_id=session_id,
+            is_new_session=True,
+        )
+
+    # When header is not None, select the session status
+    result = await select_session_by_id_and_user(db=db, id=session_id, user_id=user.id)
+    if result is None:
+        raise HTTPException(**CONSTANT.RESP_USER_SESSION_NOT_EXISTS)
+    return ChatSessionCompleteRequest(
+        user=user,
+        session_id=session_id,
+        is_new_session=False,
+    )
+
+
 async def get_current_user(
     security_scopes: SecurityScopes,
     db: AsyncSession = Depends(get_db),
@@ -61,29 +92,41 @@ async def get_current_user(
     return user
 
 
-def get_session_id(
-    scopes: list[str] | None = None, auto_create_session: bool = False
-) -> Callable[..., Awaitable[ChatSessionRequest]]:
-    async def _get_session_id(
+def get_agent_query(
+    scopes: list[str] | None = None,
+) -> Callable[..., Awaitable[ChatCompleteRequest]]:
+    async def _get_agent_query(
+        data: ChatRequest = Body(...),
         user: UserAccount = Security(get_current_user, scopes=scopes),
         db: AsyncSession = Depends(get_db),
-        sid_header: str | None = Header(default=None, alias=SESSION_HEADER),
-    ) -> ChatSessionRequest:
-        # create new session when header is None
-        if sid_header is None:
-            if not auto_create_session:
-                raise HTTPException(**CONSTANT.RESP_USER_SESSION_NULL)
-            session_id: str = await create_session(db=db, user=user)
-            return ChatSessionRequest(
-                session_id=session_id, user=user, is_new_session=True
+    ) -> ChatCompleteRequest:
+        if not data.use_memory:
+            return ChatCompleteRequest(
+                **data.model_dump(),
+                user=user,
+                is_new_session=True,
             )
 
-        # When header is not None, select the session status
-        result = await select_session_by_id_and_user(
-            db=db, id=sid_header, user_id=user.id
+        session_info = await verity_session_id(
+            db=db, user=user, session_id=data.session_id, auto_create_session=True
         )
-        if result is None:
-            raise HTTPException(**CONSTANT.RESP_USER_SESSION_NOT_EXISTS)
-        return ChatSessionRequest(session_id=sid_header, user=user, is_new_session=False)
+        result = data.model_dump()
+        result.update(**session_info.model_dump())
+        return ChatCompleteRequest(**result)
+
+    return _get_agent_query
+
+
+def get_session_id(
+    scopes: list[str] | None = None,
+) -> Callable[..., Awaitable[ChatSessionCompleteRequest]]:
+    async def _get_session_id(
+        data: ChatSessionRequest = Body(...),
+        user: UserAccount = Security(get_current_user, scopes=scopes),
+        db: AsyncSession = Depends(get_db),
+    ) -> ChatSessionCompleteRequest:
+        return await verity_session_id(
+            db=db, user=user, session_id=data.session_id, auto_create_session=False
+        )
 
     return _get_session_id

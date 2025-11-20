@@ -49,9 +49,8 @@ class AgentBase(ABC):
     async def run(
         self,
         message: str,
-        memory: Memory,
-        tools: list[ToolBase],
-        use_agent: bool = True,
+        tools: list[type[ToolBase]],
+        memory: Memory | None = None,
         **kwargs,  # type: ignore
     ) -> Any:
         raise NotImplementedError
@@ -60,9 +59,8 @@ class AgentBase(ABC):
     def run_stream(
         self,
         message: str,
-        memory: Memory,
         tools: list[FunctionTool],
-        use_agent: bool = True,
+        memory: Memory | None = None,
         **kwargs,  # type: ignore
     ) -> AsyncIterator[Any]:
         raise NotImplementedError

@@ -51,7 +51,7 @@ class UserBasicInfo(BaseModel):
 
     def build_user(self) -> UserAccount:
         return UserAccount(
-            id=generate_random_token(prefix="USR", length=16),
+            id=generate_random_token(prefix="USR", length=24),
             full_name=self.full_name,
             password=self.password,
             email=self.email,

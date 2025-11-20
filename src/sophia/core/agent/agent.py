@@ -48,45 +48,35 @@ class SophiaAgent(AgentBase):
     async def run(
         self,
         message: str,
-        memory: Memory,
         tools: list[type[ToolBase]],
-        use_agent: bool = True,
+        memory: Memory | None = None,
         **kwargs,
     ) -> AgentResponse | None:
-        result: AgentResponse | None = None
         fn_tools = [t.get_tool() for t in tools]
-        if use_agent:
-            agent = FunctionAgent(
-                system_prompt=self.system_prompt,
-                tools=fn_tools,
-                llm=self.client,
-            )
-            response: AgentOutput = await agent.run(
-                user_msg=message, memory=memory, **kwargs
-            )
-            # 封装结果
-            result = AgentResponse.from_llm(session_id=memory.session_id, output=response)
-            result.tool_post_process(
-                [tool for tool in tools if tool.__tool_name__ in response.tool_calls]
-            )
-            return result
-
-        response = await self.client.achat(messages=memory.aget_all(), **kwargs)
-        result = AgentResponse.from_llm(session_id=memory.session_id, output=response)
+        session_id: str | None = memory.session_id if memory else None
+        agent = FunctionAgent(
+            system_prompt=self.system_prompt,
+            tools=fn_tools,
+            llm=self.client,
+        )
+        response: AgentOutput = await agent.run(user_msg=message, memory=memory, **kwargs)
+        # 封装结果
+        result = AgentResponse.from_llm(session_id=session_id, output=response)
+        result.tool_post_process(
+            [tool for tool in tools if tool.__tool_name__ in response.tool_calls]
+        )
         return result
 
     async def run_stream(
         self,
         message: str,
-        memory: Memory,
         tools: list[FunctionTool],
-        use_agent: bool = True,
+        memory: Memory | None = None,
         **kwargs,
     ) -> AsyncIterator[AgentResponseStream]:
-        _ = use_agent
-        # ctx = self._get_context(session_id)
         steps = 0
         try:
+            session_id: str | None = memory.session_id if memory else None
             agent = FunctionAgent(
                 system_prompt=self.system_prompt,
                 tools=tools,
@@ -97,7 +87,7 @@ class SophiaAgent(AgentBase):
                 if isinstance(event, AgentStream):
                     steps += 1
                     yield AgentResponseStream.from_llm(
-                        session_id=memory.session_id, output=event
+                        session_id=session_id, output=event
                     )
         finally:
             if steps == 0:

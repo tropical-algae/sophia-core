@@ -10,19 +10,33 @@ from sophia.core.agent.base import ToolBase
 from sophia.core.db.models import UserAccount
 
 
-class AgentRequest(BaseModel):
+class ChatSessionRequest(BaseModel):
+    session_id: str | None
+
+
+class ChatSessionCompleteRequest(ChatSessionRequest):
+    user: UserAccount
+    is_new_session: bool
+
+
+class ChatRequest(ChatSessionRequest):
     message: str
     model: str = Field(default=settings.GPT_DEFAULT_MODEL)
     blocked_tools: list[str] = Field(default_factory=list)
+    use_memory: bool = Field(default=True)
+
+
+class ChatCompleteRequest(ChatRequest, ChatSessionCompleteRequest):
+    pass
 
 
 class AgentResponse(BaseModel):
     id: str
-    session_id: str
+    session_id: str | None
     content: str
 
     @classmethod
-    def from_llm(cls, session_id: str, output: AgentOutput | CompletionResponse):
+    def from_llm(cls, session_id: str | None, output: AgentOutput | CompletionResponse):
         id = f"chatcmpl-{uuid.uuid4().hex}"
         try:
             id = (
@@ -55,13 +69,15 @@ class AgentResponse(BaseModel):
 
 
 class AgentResponseStream(BaseModel):
-    session_id: str
+    session_id: str | None
     tool_names: list[str]
     delta: str
     response: str
 
     @classmethod
-    def from_llm(cls, session_id: str, output: AgentStream) -> "AgentResponseStream":
+    def from_llm(
+        cls, session_id: str | None, output: AgentStream
+    ) -> "AgentResponseStream":
         return cls(
             session_id=session_id,
             tool_names=[i.tool_name for i in output.tool_calls],
@@ -73,9 +89,3 @@ class AgentResponseStream(BaseModel):
 class MemoryResponse(BaseModel):
     session_id: str
     messages: list[ChatMessage]
-
-
-class ChatSessionRequest(BaseModel):
-    session_id: str
-    user: UserAccount
-    is_new_session: bool

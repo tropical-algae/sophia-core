@@ -32,11 +32,15 @@ def test_tool_check_api(client: TestClient):
 
 
 @pytest.mark.run(order=7)
-def test_message_check_api(client: TestClient, data_store: DataStore):
+@pytest.mark.parametrize(
+    "session_id",
+    [FAKE_SESION_ID],
+)
+def test_message_check_api(client: TestClient, data_store: DataStore, session_id: str):
     header = {
         "Authorization": f"Bearer {data_store.admin_token_data}",
-        "X-Session-Id": FAKE_SESION_ID,
     }
+    data = {"session_id": session_id}
     url = f"{settings.API_PREFIX}/session/messages"
-    response = client.post(url=url, headers=header)
+    response = client.post(url=url, headers=header, json=data)
     assert response.status_code == 404
