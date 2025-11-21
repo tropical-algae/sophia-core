@@ -5,11 +5,13 @@ from typing import Any
 from llama_index.core.memory import Memory
 from llama_index.core.tools import FunctionTool
 
+from sophia.core.model.tool import AgentToolInfo
+
 
 class ToolBase(ABC):
     __tool_name__: str = ""
-    __tool_display_name__: str = ""
     __tool_description__: str = ""
+    __tool_info__: AgentToolInfo = AgentToolInfo()
     __activate__: bool = True
 
     @staticmethod
@@ -59,7 +61,7 @@ class AgentBase(ABC):
     def run_stream(
         self,
         message: str,
-        tools: list[FunctionTool],
+        tools: list[type[ToolBase]],
         memory: Memory | None = None,
         **kwargs,  # type: ignore
     ) -> AsyncIterator[Any]:

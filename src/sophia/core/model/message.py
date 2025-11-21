@@ -8,6 +8,7 @@ from sophia.common.config import settings
 from sophia.common.logging import logger
 from sophia.core.agent.base import ToolBase
 from sophia.core.db.models import UserAccount
+from sophia.core.model.tool import AgentToolInfo
 
 
 class ChatSessionRequest(BaseModel):
@@ -33,54 +34,67 @@ class ChatCompleteRequest(ChatRequest, ChatSessionCompleteRequest):
 class AgentResponse(BaseModel):
     id: str
     session_id: str | None
+    tools_call: list[type[ToolBase]]
+    tools: list[AgentToolInfo]
     content: str
 
     @classmethod
-    def from_llm(cls, session_id: str | None, output: AgentOutput | CompletionResponse):
+    def from_llm(
+        cls,
+        session_id: str | None,
+        output: AgentOutput,
+        tools_map: dict[str, type[ToolBase]],
+    ) -> "AgentResponse":
         id = f"chatcmpl-{uuid.uuid4().hex}"
         try:
-            id = (
-                output.raw.get("id", f"chatcmpl-{uuid.uuid4().hex}")  # type: ignore
-                if isinstance(output, AgentOutput)
-                else output.raw.id  # type: ignore
-            )
+            id = output.raw.get("id", f"chatcmpl-{uuid.uuid4().hex}")  # type: ignore
         except Exception as err:
             logger.error(f"Failed to catch id from agent output: {err}")
-        content = (
-            output.response.content if isinstance(output, AgentOutput) else output.text
-        )
 
+        tools_call = []
+        tools_call_info = []
+        for call in output.tool_calls:
+            if tool := tools_map.get(call.tool_name):
+                tools_call.append(tool)
+                tools_call_info.append(tool.__tool_info__)
         return cls(
             id=id,
             session_id=session_id,
-            content=content,
+            tools=tools_call_info,
+            tools_call=tools_call,
+            content=output.response.content,
         )
 
-    async def tool_post_process(self, tools: list[type[ToolBase] | None]):
-        for tool in tools:
-            if tool is None:
-                continue
-            try:
+    async def tool_post_process(self):
+        try:
+            for tool in self.tools_call:
                 self.content = await tool.a_tool_post_processing_function(self.content)
-            except Exception as err:
-                logger.error(
-                    f"Failed to run {tool.__tool_name__} post process function: {err}"
-                )
+        except Exception as err:
+            logger.error(f"Failed to run tool post process function: {err}")
+            raise
 
 
 class AgentResponseStream(BaseModel):
     session_id: str | None
-    tool_names: list[str]
+    tools: list[AgentToolInfo]
     delta: str
     response: str
 
     @classmethod
     def from_llm(
-        cls, session_id: str | None, output: AgentStream
+        cls,
+        session_id: str | None,
+        output: AgentStream,
+        tools_map: dict[str, type[ToolBase]],
     ) -> "AgentResponseStream":
+        tools: list[AgentToolInfo] = []
+        for call in output.tool_calls:
+            tool = tools_map.get(call.tool_name)
+            if tool:
+                tools.append(tool.__tool_info__)
         return cls(
             session_id=session_id,
-            tool_names=[i.tool_name for i in output.tool_calls],
+            tools=tools,
             delta=output.delta,
             response=output.response,
         )

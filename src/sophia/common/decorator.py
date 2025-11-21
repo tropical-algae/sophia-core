@@ -7,7 +7,7 @@ from typing import Any
 from sophia.common.logging import logger
 
 
-def exception_handling(func: Callable | None = None, *, default_return: Any = None):
+def exception_handling(func: Callable | None = None):
     """异常捕获装饰器，可用于函数/类方法，支持同步和异步函数
 
     Args:
@@ -29,7 +29,7 @@ def exception_handling(func: Callable | None = None, *, default_return: Any = No
                 return await inner_func(*args, **kwargs)
             except Exception as err:
                 logger.error(f"{func_path} 执行失败：{err}")
-                return default_return
+                raise
 
         @functools.wraps(inner_func)
         def sync_wrapper(*args, **kwargs):
@@ -42,7 +42,7 @@ def exception_handling(func: Callable | None = None, *, default_return: Any = No
                 return inner_func(*args, **kwargs)
             except Exception as err:
                 logger.error(f"{func_path} 执行失败：{err}")
-                return default_return
+                raise
 
         return async_wrapper if is_coroutine else sync_wrapper
 

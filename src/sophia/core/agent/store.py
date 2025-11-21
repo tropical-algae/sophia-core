@@ -48,9 +48,9 @@ class SophiaStore:
         # collect tools
         for tool in ToolBase.__subclasses__():
             if tool.__activate__ and not inspect.isabstract(tool):
-                tools[tool.__tool_display_name__] = cast(type[ToolBase], tool)
+                tools[tool.__tool_info__.name] = cast(type[ToolBase], tool)
             else:
-                unactivated_tools.append(tool.__tool_display_name__)
+                unactivated_tools.append(tool.__tool_info__.name)
         self.tools = tools
         logger.info(f"Loaded tools: {list(self.tools.keys())}")
         logger.info(f"Unloaded tools: {unactivated_tools}")

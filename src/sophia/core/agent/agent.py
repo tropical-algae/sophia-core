@@ -51,8 +51,10 @@ class SophiaAgent(AgentBase):
         tools: list[type[ToolBase]],
         memory: Memory | None = None,
         **kwargs,
-    ) -> AgentResponse | None:
+    ) -> AgentResponse:
         fn_tools = [t.get_tool() for t in tools]
+        tools_map = {t.__tool_name__: t for t in tools}
+
         session_id: str | None = memory.session_id if memory else None
         agent = FunctionAgent(
             system_prompt=self.system_prompt,
@@ -61,25 +63,27 @@ class SophiaAgent(AgentBase):
         )
         response: AgentOutput = await agent.run(user_msg=message, memory=memory, **kwargs)
         # 封装结果
-        result = AgentResponse.from_llm(session_id=session_id, output=response)
-        result.tool_post_process(
-            [tool for tool in tools if tool.__tool_name__ in response.tool_calls]
+        result = AgentResponse.from_llm(
+            session_id=session_id, output=response, tools_map=tools_map
         )
+        await result.tool_post_process()
         return result
 
     async def run_stream(
         self,
         message: str,
-        tools: list[FunctionTool],
+        tools: list[type[ToolBase]],
         memory: Memory | None = None,
         **kwargs,
     ) -> AsyncIterator[AgentResponseStream]:
         steps = 0
         try:
+            fn_tools = [t.get_tool() for t in tools]
+            tools_map = {t.__tool_name__: t for t in tools}
             session_id: str | None = memory.session_id if memory else None
             agent = FunctionAgent(
                 system_prompt=self.system_prompt,
-                tools=tools,
+                tools=fn_tools,
                 llm=self.client,
             )
             handler = agent.run(user_msg=message, memory=memory, **kwargs)
@@ -87,7 +91,7 @@ class SophiaAgent(AgentBase):
                 if isinstance(event, AgentStream):
                     steps += 1
                     yield AgentResponseStream.from_llm(
-                        session_id=session_id, output=event
+                        session_id=session_id, output=event, tools_map=tools_map
                     )
         finally:
             if steps == 0:
