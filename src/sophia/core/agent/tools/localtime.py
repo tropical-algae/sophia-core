@@ -17,5 +17,5 @@ class LocaltimeTool(ToolBase):
     @staticmethod
     async def a_tool_function() -> str:
         localtime = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {datetime.now().strftime('%A')}"
-        logger.info(f"工具调用：检查当前时间 {localtime}")
+        logger.info(f"Tool Call: Check local time {localtime}")
         return localtime

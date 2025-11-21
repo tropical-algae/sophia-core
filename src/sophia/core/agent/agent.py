@@ -95,4 +95,6 @@ class SophiaAgent(AgentBase):
                     )
         finally:
             if steps == 0:
-                raise RuntimeError("Agent failed to perform streaming inference.")
+                error_msg = "Agent failed to perform streaming inference."
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)

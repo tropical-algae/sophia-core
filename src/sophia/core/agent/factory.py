@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 from sophia.app.utils.constant import CONSTANT
 from sophia.common.config import settings
+from sophia.common.logging import logger
 from sophia.core.agent.base import AgentBase
 
 T = TypeVar("T", bound=AgentBase)
@@ -15,6 +16,7 @@ class AgentFactory:
 
     def get_agent(self, agent: type[T], model: str) -> T:
         if model not in settings.AGENT_OPTIONAL_MODELS:
+            logger.error(f"The model {model} is not supported.")
             raise HTTPException(**CONSTANT.RESP_INVALID_MODEL)
         if model not in self.agents:
             self.agents[model] = agent(

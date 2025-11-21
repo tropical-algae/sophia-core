@@ -53,6 +53,9 @@ async def verity_session_id(
 ) -> ChatSessionCompleteRequest:
     if not session_id:
         if not auto_create_session:
+            logger.error(
+                "The API is missing session_id and doesn't support automatic creation"
+            )
             raise HTTPException(**CONSTANT.RESP_USER_SESSION_NULL)
         session_id = await create_session(db=db, user=user)
         return ChatSessionCompleteRequest(
@@ -64,6 +67,7 @@ async def verity_session_id(
     # When header is not None, select the session status
     result = await select_session_by_id_and_user(db=db, id=session_id, user_id=user.id)
     if result is None:
+        logger.error(f"User {user.id} doesn's have session {session_id}")
         raise HTTPException(**CONSTANT.RESP_USER_SESSION_NOT_EXISTS)
     return ChatSessionCompleteRequest(
         user=user,
@@ -101,6 +105,7 @@ def get_agent_query(
         db: AsyncSession = Depends(get_db),
     ) -> ChatCompleteRequest:
         if not data.use_memory:
+            logger.debug("Successfully verified user query (need not memory)")
             return ChatCompleteRequest(
                 **data.model_dump(),
                 user=user,
@@ -112,6 +117,9 @@ def get_agent_query(
         )
         result = data.model_dump()
         result.update(**session_info.model_dump())
+        logger.debug(
+            f"Successfully verified user query ({session_info.session_id} is_new: {session_info.is_new_session})"
+        )
         return ChatCompleteRequest(**result)
 
     return _get_agent_query
